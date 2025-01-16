@@ -9,7 +9,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { QRCodeScanner } from "@/components/QRCodeScanner";
 import { PreApproveVisitorForm } from "@/components/PreApproveVisitorForm";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import { Visitor } from "@/types/visitor";
+import { Visitor, VisitorType } from "@/types/visitor";
 
 const Index = () => {
   const [visitors, setVisitors] = useState<Visitor[]>([]);
@@ -31,8 +31,8 @@ const Index = () => {
     const transformedVisitors: Visitor[] = (data || []).map(visitor => ({
       id: visitor.id,
       name: visitor.name,
-      type: visitor.type,
-      status: visitor.status,
+      type: visitor.type as VisitorType, // Cast the type to VisitorType
+      status: visitor.status as "pending" | "approved" | "denied",
       arrivalTime: visitor.arrival_time,
       phone: visitor.phone,
       qr_code: visitor.qr_code
