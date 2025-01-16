@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { useState } from "react";
+import { useToast } from "@/hooks/use-toast";
 
 interface VisitorCardProps {
   visitor: Visitor;
@@ -14,6 +15,7 @@ interface VisitorCardProps {
 
 export function VisitorCard({ visitor, onApprove, onDeny }: VisitorCardProps) {
   const [isQRDialogOpen, setIsQRDialogOpen] = useState(false);
+  const { toast } = useToast();
 
   const statusColors = {
     pending: "bg-yellow-100 text-yellow-800",
@@ -22,15 +24,48 @@ export function VisitorCard({ visitor, onApprove, onDeny }: VisitorCardProps) {
   };
 
   const handleShare = async () => {
+    if (!visitor.qr_code) {
+      toast({
+        title: "Error",
+        description: "No QR code available to share",
+        variant: "destructive",
+      });
+      return;
+    }
+
     try {
-      if (visitor.qr_code) {
-        await navigator.share({
-          title: `QR Code for ${visitor.name}`,
-          text: `Visitor pass for ${visitor.name}`,
-          url: visitor.qr_code
+      // Check if the Web Share API is supported
+      if (!navigator.share) {
+        // Fallback for browsers that don't support Web Share API
+        toast({
+          title: "Sharing not supported",
+          description: "Your browser doesn't support sharing functionality",
+          variant: "destructive",
         });
+        return;
       }
+
+      await navigator.share({
+        title: `Visitor Pass for ${visitor.name}`,
+        text: `QR Code for visitor: ${visitor.name}`,
+        url: visitor.qr_code
+      });
+
+      toast({
+        title: "Success",
+        description: "QR code shared successfully",
+      });
     } catch (error) {
+      if ((error as Error).name === 'AbortError') {
+        // User cancelled the share operation
+        return;
+      }
+      
+      toast({
+        title: "Error sharing",
+        description: "Failed to share QR code",
+        variant: "destructive",
+      });
       console.error('Error sharing:', error);
     }
   };
