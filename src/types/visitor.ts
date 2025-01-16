@@ -7,4 +7,5 @@ export interface Visitor {
   status: "pending" | "approved" | "denied";
   arrivalTime: string;
   phone?: string;
+  qr_code?: string;
 }
