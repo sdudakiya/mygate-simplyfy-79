@@ -1,21 +1,38 @@
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Auth as SupabaseAuth } from "@supabase/auth-ui-react";
 import { ThemeSupa } from "@supabase/auth-ui-shared";
 import { supabase } from "@/integrations/supabase/client";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import { AuthError } from "@supabase/supabase-js";
 
 const Auth = () => {
   const navigate = useNavigate();
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
-      if (session) {
+      if (event === 'SIGNED_IN' && session) {
         navigate("/");
+      }
+      if (event === 'SIGNED_OUT') {
+        setError(null);
       }
     });
 
     return () => subscription.unsubscribe();
   }, [navigate]);
+
+  const handleError = (error: AuthError) => {
+    console.error('Auth error:', error);
+    if (error.message.includes("Database error saving new user")) {
+      setError("Unable to create account. Please try again later.");
+    } else if (error.message.includes("invalid_credentials")) {
+      setError("Invalid email or password. Please check your credentials.");
+    } else {
+      setError(error.message);
+    }
+  };
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
@@ -28,12 +45,17 @@ const Auth = () => {
             Sign in to manage your community security
           </p>
         </div>
+        {error && (
+          <Alert variant="destructive">
+            <AlertDescription>{error}</AlertDescription>
+          </Alert>
+        )}
         <SupabaseAuth
           supabaseClient={supabase}
           appearance={{ theme: ThemeSupa }}
           providers={[]}
           redirectTo={window.location.origin}
-          view="sign_in"
+          onError={handleError}
         />
       </div>
     </div>
