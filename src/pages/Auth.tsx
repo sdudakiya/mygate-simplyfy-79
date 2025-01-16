@@ -104,7 +104,8 @@ const Auth = () => {
             appearance={{ theme: ThemeSupa }}
             providers={[]}
             redirectTo={window.location.origin}
-            signUpAttributes={{
+            view="sign_up"
+            additionalData={{
               flat_number: selectedFlatNumber,
             }}
           />
