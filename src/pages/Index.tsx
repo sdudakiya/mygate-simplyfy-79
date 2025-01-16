@@ -9,7 +9,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { QRCodeScanner } from "@/components/QRCodeScanner";
 import { PreApproveVisitorForm } from "@/components/PreApproveVisitorForm";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import { Visitor } from "@/types/visitor";
+import { Visitor, VisitorType } from "@/types/visitor";
 import { useNavigate } from "react-router-dom";
 
 const Index = () => {
@@ -34,6 +34,10 @@ const Index = () => {
     }
   };
 
+  const isValidVisitorType = (type: string): type is VisitorType => {
+    return ['Delivery', 'Guest', 'Service', 'Cab'].includes(type);
+  };
+
   const fetchVisitors = async () => {
     const { data, error } = await supabase
       .from('visitors')
@@ -45,15 +49,22 @@ const Index = () => {
       return;
     }
 
-    const transformedVisitors: Visitor[] = (data || []).map(visitor => ({
-      id: visitor.id,
-      name: visitor.name,
-      type: visitor.type,
-      status: visitor.status,
-      arrivalTime: visitor.arrival_time,
-      phone: visitor.phone,
-      qr_code: visitor.qr_code
-    }));
+    const transformedVisitors: Visitor[] = (data || []).map(visitor => {
+      if (!isValidVisitorType(visitor.type)) {
+        console.error(`Invalid visitor type: ${visitor.type}`);
+        return null;
+      }
+
+      return {
+        id: visitor.id,
+        name: visitor.name,
+        type: visitor.type as VisitorType,
+        status: visitor.status as "pending" | "approved" | "denied",
+        arrivalTime: visitor.arrival_time,
+        phone: visitor.phone,
+        qr_code: visitor.qr_code
+      };
+    }).filter((visitor): visitor is Visitor => visitor !== null);
 
     setVisitors(transformedVisitors);
   };
