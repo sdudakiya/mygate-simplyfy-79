@@ -49,22 +49,28 @@ const Index = () => {
       return;
     }
 
-    const transformedVisitors: Visitor[] = (data || []).map(visitor => {
-      if (!isValidVisitorType(visitor.type)) {
-        console.error(`Invalid visitor type: ${visitor.type}`);
-        return null;
-      }
+    const transformedVisitors = (data || [])
+      .map(visitor => {
+        if (!isValidVisitorType(visitor.type)) {
+          console.error(`Invalid visitor type: ${visitor.type}`);
+          return null;
+        }
 
-      return {
-        id: visitor.id,
-        name: visitor.name,
-        type: visitor.type as VisitorType,
-        status: visitor.status as "pending" | "approved" | "denied",
-        arrivalTime: visitor.arrival_time,
-        phone: visitor.phone,
-        qr_code: visitor.qr_code
-      };
-    }).filter((visitor): visitor is Visitor => visitor !== null);
+        const transformedVisitor: Visitor = {
+          id: visitor.id,
+          name: visitor.name,
+          type: visitor.type as VisitorType,
+          status: visitor.status as "pending" | "approved" | "denied",
+          arrivalTime: visitor.arrival_time,
+        };
+
+        // Only add optional fields if they exist
+        if (visitor.phone) transformedVisitor.phone = visitor.phone;
+        if (visitor.qr_code) transformedVisitor.qr_code = visitor.qr_code;
+
+        return transformedVisitor;
+      })
+      .filter((visitor): visitor is Visitor => visitor !== null);
 
     setVisitors(transformedVisitors);
   };
