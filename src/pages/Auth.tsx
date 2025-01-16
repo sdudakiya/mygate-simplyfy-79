@@ -104,11 +104,8 @@ const Auth = () => {
             appearance={{ theme: ThemeSupa }}
             providers={[]}
             redirectTo={window.location.origin}
-            options={{
-              emailRedirectTo: window.location.origin,
-              data: {
-                flat_number: selectedFlatNumber,
-              },
+            signUpAttributes={{
+              flat_number: selectedFlatNumber,
             }}
           />
         </div>
