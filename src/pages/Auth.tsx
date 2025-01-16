@@ -20,19 +20,18 @@ const Auth = () => {
       }
     });
 
-    return () => subscription.unsubscribe();
-  }, [navigate]);
+    // Listen for auth errors
+    const authListener = supabase.auth.onAuthStateChange((event, session) => {
+      if (event === 'USER_UPDATED' && !session) {
+        setError("An error occurred during authentication. Please try again.");
+      }
+    });
 
-  const handleError = (error: AuthError) => {
-    console.error('Auth error:', error);
-    if (error.message.includes("Database error saving new user")) {
-      setError("Unable to create account. Please try again later.");
-    } else if (error.message.includes("invalid_credentials")) {
-      setError("Invalid email or password. Please check your credentials.");
-    } else {
-      setError(error.message);
-    }
-  };
+    return () => {
+      subscription.unsubscribe();
+      authListener.data.subscription.unsubscribe();
+    };
+  }, [navigate]);
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
@@ -55,7 +54,6 @@ const Auth = () => {
           appearance={{ theme: ThemeSupa }}
           providers={[]}
           redirectTo={window.location.origin}
-          onError={handleError}
         />
       </div>
     </div>
