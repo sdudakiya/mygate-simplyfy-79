@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { QrScanner } from "@yudiel/react-qr-scanner";
+import { Scanner } from "@yudiel/react-qr-scanner";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { QrCode } from "lucide-react";
@@ -65,7 +65,7 @@ export function QRCodeScanner() {
           <DialogTitle>Scan QR Code</DialogTitle>
         </DialogHeader>
         <div className="h-[300px]">
-          <QrScanner
+          <Scanner
             onDecode={handleScan}
             onError={handleError}
           />

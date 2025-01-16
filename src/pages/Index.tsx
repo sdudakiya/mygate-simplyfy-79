@@ -27,7 +27,18 @@ const Index = () => {
       return;
     }
 
-    setVisitors(data || []);
+    // Transform the data to match our Visitor type
+    const transformedVisitors: Visitor[] = (data || []).map(visitor => ({
+      id: visitor.id,
+      name: visitor.name,
+      type: visitor.type,
+      status: visitor.status,
+      arrivalTime: visitor.arrival_time,
+      phone: visitor.phone,
+      qr_code: visitor.qr_code
+    }));
+
+    setVisitors(transformedVisitors);
   };
 
   useEffect(() => {
