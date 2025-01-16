@@ -6,11 +6,16 @@ import { QrCode } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 
+interface IDetectedBarcode {
+  rawValue: string;
+}
+
 export function QRCodeScanner() {
   const [open, setOpen] = useState(false);
   const { toast } = useToast();
 
-  const handleScan = async (data: string | null) => {
+  const handleScan = async (detectedCodes: IDetectedBarcode[]) => {
+    const data = detectedCodes[0]?.rawValue;
     if (data) {
       try {
         const parsedData = JSON.parse(data);
