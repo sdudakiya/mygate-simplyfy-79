@@ -21,20 +21,30 @@ export function QRCodeScanner() {
         const parsedData = JSON.parse(data);
         
         // Verify QR code in database
-        const { data: visitor, error } = await supabase
+        const { data: visitor, error: fetchError } = await supabase
           .from('visitors')
           .select()
           .eq('name', parsedData.name)
           .eq('type', parsedData.type)
           .single();
 
-        if (error || !visitor) {
+        if (fetchError || !visitor) {
           throw new Error('Invalid QR code');
+        }
+
+        // Update visitor status to approved
+        const { error: updateError } = await supabase
+          .from('visitors')
+          .update({ status: 'approved' })
+          .eq('id', visitor.id);
+
+        if (updateError) {
+          throw updateError;
         }
 
         toast({
           title: "Success",
-          description: `Verified visitor: ${visitor.name}`,
+          description: `Verified and approved visitor: ${visitor.name}`,
         });
         
         setOpen(false);

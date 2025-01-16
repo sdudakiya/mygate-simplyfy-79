@@ -1,8 +1,10 @@
-import { Check, X } from "lucide-react";
+import { Check, X, QrCode, Share2 } from "lucide-react";
 import { Visitor } from "@/types/visitor";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { useState } from "react";
 
 interface VisitorCardProps {
   visitor: Visitor;
@@ -11,10 +13,26 @@ interface VisitorCardProps {
 }
 
 export function VisitorCard({ visitor, onApprove, onDeny }: VisitorCardProps) {
+  const [isQRDialogOpen, setIsQRDialogOpen] = useState(false);
+
   const statusColors = {
     pending: "bg-yellow-100 text-yellow-800",
     approved: "bg-green-100 text-green-800",
     denied: "bg-red-100 text-red-800",
+  };
+
+  const handleShare = async () => {
+    try {
+      if (visitor.qr_code) {
+        await navigator.share({
+          title: `QR Code for ${visitor.name}`,
+          text: `Visitor pass for ${visitor.name}`,
+          url: visitor.qr_code
+        });
+      }
+    } catch (error) {
+      console.error('Error sharing:', error);
+    }
   };
 
   return (
@@ -33,25 +51,52 @@ export function VisitorCard({ visitor, onApprove, onDeny }: VisitorCardProps) {
         </div>
       </div>
       
-      {visitor.status === "pending" && (
-        <div className="flex gap-2 mt-4">
-          <Button
-            onClick={() => onApprove(visitor.id)}
-            className="flex-1 bg-green-500 hover:bg-green-600"
-          >
-            <Check className="w-4 h-4 mr-2" />
-            Approve
-          </Button>
-          <Button
-            onClick={() => onDeny(visitor.id)}
-            variant="destructive"
-            className="flex-1"
-          >
-            <X className="w-4 h-4 mr-2" />
-            Deny
-          </Button>
-        </div>
-      )}
+      <div className="flex gap-2 mt-4">
+        {visitor.status === "pending" && (
+          <>
+            <Button
+              onClick={() => onApprove(visitor.id)}
+              className="flex-1 bg-green-500 hover:bg-green-600"
+            >
+              <Check className="w-4 h-4 mr-2" />
+              Approve
+            </Button>
+            <Button
+              onClick={() => onDeny(visitor.id)}
+              variant="destructive"
+              className="flex-1"
+            >
+              <X className="w-4 h-4 mr-2" />
+              Deny
+            </Button>
+          </>
+        )}
+        
+        {visitor.qr_code && (
+          <>
+            <Dialog open={isQRDialogOpen} onOpenChange={setIsQRDialogOpen}>
+              <DialogTrigger asChild>
+                <Button variant="outline" className="flex-1">
+                  <QrCode className="w-4 h-4 mr-2" />
+                  View QR
+                </Button>
+              </DialogTrigger>
+              <DialogContent>
+                <DialogHeader>
+                  <DialogTitle>Visitor QR Code</DialogTitle>
+                </DialogHeader>
+                <div className="flex flex-col items-center gap-4">
+                  <img src={visitor.qr_code} alt="QR Code" className="w-64 h-64" />
+                  <Button onClick={handleShare} className="w-full">
+                    <Share2 className="w-4 h-4 mr-2" />
+                    Share QR Code
+                  </Button>
+                </div>
+              </DialogContent>
+            </Dialog>
+          </>
+        )}
+      </div>
     </Card>
   );
 }
