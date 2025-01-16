@@ -1,48 +1,83 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 import { AppSidebar } from "@/components/AppSidebar";
 import { VisitorCard } from "@/components/VisitorCard";
-import { Visitor } from "@/types/visitor";
 import { Button } from "@/components/ui/button";
-import { QrCode, UserPlus, Phone } from "lucide-react";
-import { useToast } from "@/components/ui/use-toast";
-
-const initialVisitors: Visitor[] = [
-  {
-    id: "1",
-    name: "John Doe",
-    type: "Guest",
-    status: "pending",
-    arrivalTime: "10:30 AM",
-    phone: "+1234567890",
-  },
-  {
-    id: "2",
-    name: "Delivery Guy",
-    type: "Delivery",
-    status: "approved",
-    arrivalTime: "11:45 AM",
-  },
-];
+import { UserPlus, Phone } from "lucide-react";
+import { useToast } from "@/hooks/use-toast";
+import { supabase } from "@/integrations/supabase/client";
+import { QRCodeScanner } from "@/components/QRCodeScanner";
+import { PreApproveVisitorForm } from "@/components/PreApproveVisitorForm";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Visitor } from "@/types/visitor";
 
 const Index = () => {
-  const [visitors, setVisitors] = useState<Visitor[]>(initialVisitors);
+  const [visitors, setVisitors] = useState<Visitor[]>([]);
+  const [isPreApproveOpen, setIsPreApproveOpen] = useState(false);
   const { toast } = useToast();
 
-  const handleApprove = (id: string) => {
+  const fetchVisitors = async () => {
+    const { data, error } = await supabase
+      .from('visitors')
+      .select('*')
+      .order('created_at', { ascending: false });
+
+    if (error) {
+      console.error('Error fetching visitors:', error);
+      return;
+    }
+
+    setVisitors(data || []);
+  };
+
+  useEffect(() => {
+    fetchVisitors();
+  }, []);
+
+  const handleApprove = async (id: string) => {
+    const { error } = await supabase
+      .from('visitors')
+      .update({ status: 'approved' })
+      .eq('id', id);
+
+    if (error) {
+      toast({
+        title: "Error",
+        description: "Failed to approve visitor",
+        variant: "destructive",
+      });
+      return;
+    }
+
     setVisitors(visitors.map(v => 
       v.id === id ? { ...v, status: "approved" as const } : v
     ));
+    
     toast({
       title: "Visitor Approved",
       description: "The visitor has been approved for entry.",
     });
   };
 
-  const handleDeny = (id: string) => {
+  const handleDeny = async (id: string) => {
+    const { error } = await supabase
+      .from('visitors')
+      .update({ status: 'denied' })
+      .eq('id', id);
+
+    if (error) {
+      toast({
+        title: "Error",
+        description: "Failed to deny visitor",
+        variant: "destructive",
+      });
+      return;
+    }
+
     setVisitors(visitors.map(v => 
       v.id === id ? { ...v, status: "denied" as const } : v
     ));
+    
     toast({
       title: "Visitor Denied",
       description: "The visitor has been denied entry.",
@@ -65,14 +100,26 @@ const Index = () => {
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
-              <Button className="flex items-center justify-center gap-2 h-20">
-                <QrCode className="w-6 h-6" />
-                <span>Generate QR Code</span>
-              </Button>
-              <Button className="flex items-center justify-center gap-2 h-20" variant="secondary">
-                <UserPlus className="w-6 h-6" />
-                <span>Pre-approve Visitor</span>
-              </Button>
+              <QRCodeScanner />
+              
+              <Dialog open={isPreApproveOpen} onOpenChange={setIsPreApproveOpen}>
+                <DialogTrigger asChild>
+                  <Button className="flex items-center justify-center gap-2 h-20" variant="secondary">
+                    <UserPlus className="w-6 h-6" />
+                    <span>Pre-approve Visitor</span>
+                  </Button>
+                </DialogTrigger>
+                <DialogContent>
+                  <DialogHeader>
+                    <DialogTitle>Pre-approve Visitor</DialogTitle>
+                  </DialogHeader>
+                  <PreApproveVisitorForm onSuccess={() => {
+                    setIsPreApproveOpen(false);
+                    fetchVisitors();
+                  }} />
+                </DialogContent>
+              </Dialog>
+
               <Button className="flex items-center justify-center gap-2 h-20" variant="outline">
                 <Phone className="w-6 h-6" />
                 <span>Emergency Contacts</span>
