@@ -4,11 +4,34 @@ import { Auth as SupabaseAuth } from "@supabase/auth-ui-react";
 import { ThemeSupa } from "@supabase/auth-ui-shared";
 import { supabase } from "@/integrations/supabase/client";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { AuthError } from "@supabase/supabase-js";
+import { useQuery } from "@tanstack/react-query";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { Label } from "@/components/ui/label";
 
 const Auth = () => {
   const navigate = useNavigate();
   const [error, setError] = useState<string | null>(null);
+  const [selectedFlatNumber, setSelectedFlatNumber] = useState<string>("");
+
+  // Fetch flat numbers
+  const { data: flats } = useQuery({
+    queryKey: ['flats'],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('flats')
+        .select('flat_number')
+        .order('flat_number');
+      
+      if (error) throw error;
+      return data;
+    }
+  });
 
   useEffect(() => {
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
@@ -49,12 +72,46 @@ const Auth = () => {
             <AlertDescription>{error}</AlertDescription>
           </Alert>
         )}
-        <SupabaseAuth
-          supabaseClient={supabase}
-          appearance={{ theme: ThemeSupa }}
-          providers={[]}
-          redirectTo={window.location.origin}
-        />
+        <div className="space-y-4">
+          <div className="space-y-2">
+            <Label htmlFor="flat-number">Flat Number</Label>
+            <Select
+              value={selectedFlatNumber}
+              onValueChange={(value) => {
+                setSelectedFlatNumber(value);
+                // Set the flat number in the user metadata
+                const element = document.querySelector('input[name="email"]');
+                if (element) {
+                  const event = new Event('input', { bubbles: true });
+                  element.dispatchEvent(event);
+                }
+              }}
+            >
+              <SelectTrigger className="w-full">
+                <SelectValue placeholder="Select your flat number" />
+              </SelectTrigger>
+              <SelectContent>
+                {flats?.map((flat) => (
+                  <SelectItem key={flat.flat_number} value={flat.flat_number}>
+                    {flat.flat_number}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+          <SupabaseAuth
+            supabaseClient={supabase}
+            appearance={{ theme: ThemeSupa }}
+            providers={[]}
+            redirectTo={window.location.origin}
+            options={{
+              emailRedirectTo: window.location.origin,
+              data: {
+                flat_number: selectedFlatNumber,
+              },
+            }}
+          />
+        </div>
       </div>
     </div>
   );
