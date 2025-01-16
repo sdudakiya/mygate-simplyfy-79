@@ -66,7 +66,7 @@ export function QRCodeScanner() {
         </DialogHeader>
         <div className="h-[300px]">
           <Scanner
-            onResult={handleScan}
+            onScan={handleScan}
             onError={handleError}
           />
         </div>
