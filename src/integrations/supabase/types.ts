@@ -9,14 +9,78 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
+      flats: {
+        Row: {
+          created_at: string
+          flat_number: string | null
+          floor: number
+          id: string
+          unit: number
+          updated_at: string
+          wing: Database["public"]["Enums"]["wing_type"]
+        }
+        Insert: {
+          created_at?: string
+          flat_number?: string | null
+          floor: number
+          id?: string
+          unit: number
+          updated_at?: string
+          wing: Database["public"]["Enums"]["wing_type"]
+        }
+        Update: {
+          created_at?: string
+          flat_number?: string | null
+          floor?: number
+          id?: string
+          unit?: number
+          updated_at?: string
+          wing?: Database["public"]["Enums"]["wing_type"]
+        }
+        Relationships: []
+      }
+      profiles: {
+        Row: {
+          created_at: string
+          flat_id: string | null
+          id: string
+          role: Database["public"]["Enums"]["user_role"]
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          flat_id?: string | null
+          id: string
+          role?: Database["public"]["Enums"]["user_role"]
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          flat_id?: string | null
+          id?: string
+          role?: Database["public"]["Enums"]["user_role"]
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "profiles_flat_id_fkey"
+            columns: ["flat_id"]
+            isOneToOne: false
+            referencedRelation: "flats"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       visitors: {
         Row: {
           arrival_time: string | null
           created_at: string | null
+          flat_id: string | null
           id: string
           name: string
           phone: string | null
           qr_code: string | null
+          registered_by: string | null
           status: string
           type: string
           updated_at: string | null
@@ -24,10 +88,12 @@ export type Database = {
         Insert: {
           arrival_time?: string | null
           created_at?: string | null
+          flat_id?: string | null
           id?: string
           name: string
           phone?: string | null
           qr_code?: string | null
+          registered_by?: string | null
           status?: string
           type: string
           updated_at?: string | null
@@ -35,15 +101,25 @@ export type Database = {
         Update: {
           arrival_time?: string | null
           created_at?: string | null
+          flat_id?: string | null
           id?: string
           name?: string
           phone?: string | null
           qr_code?: string | null
+          registered_by?: string | null
           status?: string
           type?: string
           updated_at?: string | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "visitors_flat_id_fkey"
+            columns: ["flat_id"]
+            isOneToOne: false
+            referencedRelation: "flats"
+            referencedColumns: ["id"]
+          },
+        ]
       }
     }
     Views: {
@@ -53,7 +129,8 @@ export type Database = {
       [_ in never]: never
     }
     Enums: {
-      [_ in never]: never
+      user_role: "flat_owner" | "security"
+      wing_type: "A" | "B"
     }
     CompositeTypes: {
       [_ in never]: never

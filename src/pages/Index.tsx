@@ -3,18 +3,36 @@ import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 import { AppSidebar } from "@/components/AppSidebar";
 import { VisitorCard } from "@/components/VisitorCard";
 import { Button } from "@/components/ui/button";
-import { UserPlus, Phone } from "lucide-react";
+import { UserPlus, Phone, LogOut } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { QRCodeScanner } from "@/components/QRCodeScanner";
 import { PreApproveVisitorForm } from "@/components/PreApproveVisitorForm";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import { Visitor, VisitorType } from "@/types/visitor";
+import { Visitor } from "@/types/visitor";
+import { useNavigate } from "react-router-dom";
 
 const Index = () => {
   const [visitors, setVisitors] = useState<Visitor[]>([]);
   const [isPreApproveOpen, setIsPreApproveOpen] = useState(false);
+  const [userRole, setUserRole] = useState<'flat_owner' | 'security' | null>(null);
   const { toast } = useToast();
+  const navigate = useNavigate();
+
+  const fetchUserRole = async () => {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return;
+
+    const { data: profile } = await supabase
+      .from('profiles')
+      .select('role')
+      .eq('id', user.id)
+      .single();
+
+    if (profile) {
+      setUserRole(profile.role as 'flat_owner' | 'security');
+    }
+  };
 
   const fetchVisitors = async () => {
     const { data, error } = await supabase
@@ -27,12 +45,11 @@ const Index = () => {
       return;
     }
 
-    // Transform the data to match our Visitor type
     const transformedVisitors: Visitor[] = (data || []).map(visitor => ({
       id: visitor.id,
       name: visitor.name,
-      type: visitor.type as VisitorType, // Cast the type to VisitorType
-      status: visitor.status as "pending" | "approved" | "denied",
+      type: visitor.type,
+      status: visitor.status,
       arrivalTime: visitor.arrival_time,
       phone: visitor.phone,
       qr_code: visitor.qr_code
@@ -42,7 +59,23 @@ const Index = () => {
   };
 
   useEffect(() => {
+    fetchUserRole();
     fetchVisitors();
+
+    // Subscribe to realtime updates
+    const channel = supabase
+      .channel('public:visitors')
+      .on('postgres_changes', 
+        { event: '*', schema: 'public', table: 'visitors' },
+        () => {
+          fetchVisitors();
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
   }, []);
 
   const handleApprove = async (id: string) => {
@@ -96,6 +129,11 @@ const Index = () => {
     });
   };
 
+  const handleLogout = async () => {
+    await supabase.auth.signOut();
+    navigate('/auth');
+  };
+
   return (
     <SidebarProvider>
       <div className="min-h-screen flex w-full bg-gray-50">
@@ -107,34 +145,46 @@ const Index = () => {
                 <h1 className="text-3xl font-bold text-gray-900">Welcome Back!</h1>
                 <p className="text-gray-600 mt-1">Manage your community security</p>
               </div>
-              <SidebarTrigger />
+              <div className="flex items-center gap-4">
+                <Button variant="outline" onClick={handleLogout}>
+                  <LogOut className="w-4 h-4 mr-2" />
+                  Logout
+                </Button>
+                <SidebarTrigger />
+              </div>
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
-              <QRCodeScanner />
+              {userRole === 'security' && (
+                <QRCodeScanner />
+              )}
               
-              <Dialog open={isPreApproveOpen} onOpenChange={setIsPreApproveOpen}>
-                <DialogTrigger asChild>
-                  <Button className="flex items-center justify-center gap-2 h-20" variant="secondary">
-                    <UserPlus className="w-6 h-6" />
-                    <span>Pre-approve Visitor</span>
-                  </Button>
-                </DialogTrigger>
-                <DialogContent>
-                  <DialogHeader>
-                    <DialogTitle>Pre-approve Visitor</DialogTitle>
-                  </DialogHeader>
-                  <PreApproveVisitorForm onSuccess={() => {
-                    setIsPreApproveOpen(false);
-                    fetchVisitors();
-                  }} />
-                </DialogContent>
-              </Dialog>
+              {userRole === 'flat_owner' && (
+                <Dialog open={isPreApproveOpen} onOpenChange={setIsPreApproveOpen}>
+                  <DialogTrigger asChild>
+                    <Button className="flex items-center justify-center gap-2 h-20" variant="secondary">
+                      <UserPlus className="w-6 h-6" />
+                      <span>Pre-approve Visitor</span>
+                    </Button>
+                  </DialogTrigger>
+                  <DialogContent>
+                    <DialogHeader>
+                      <DialogTitle>Pre-approve Visitor</DialogTitle>
+                    </DialogHeader>
+                    <PreApproveVisitorForm onSuccess={() => {
+                      setIsPreApproveOpen(false);
+                      fetchVisitors();
+                    }} />
+                  </DialogContent>
+                </Dialog>
+              )}
 
-              <Button className="flex items-center justify-center gap-2 h-20" variant="outline">
-                <Phone className="w-6 h-6" />
-                <span>Emergency Contacts</span>
-              </Button>
+              {userRole === 'flat_owner' && (
+                <Button className="flex items-center justify-center gap-2 h-20" variant="outline">
+                  <Phone className="w-6 h-6" />
+                  <span>Emergency Contacts</span>
+                </Button>
+              )}
             </div>
 
             <div>
