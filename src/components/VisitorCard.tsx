@@ -34,6 +34,9 @@ export function VisitorCard({ visitor, onApprove, onDeny }: VisitorCardProps) {
     }
 
     try {
+      // Validate QR code URL
+      const url = new URL(visitor.qr_code);
+
       // Check if the Web Share API is supported
       if (!navigator.share) {
         // Fallback for browsers that don't support Web Share API
@@ -45,11 +48,13 @@ export function VisitorCard({ visitor, onApprove, onDeny }: VisitorCardProps) {
         return;
       }
 
-      await navigator.share({
+      const shareData = {
         title: `Visitor Pass for ${visitor.name}`,
         text: `QR Code for visitor: ${visitor.name}`,
-        url: visitor.qr_code
-      });
+        url: url.toString()
+      };
+
+      await navigator.share(shareData);
 
       toast({
         title: "Success",
@@ -60,10 +65,20 @@ export function VisitorCard({ visitor, onApprove, onDeny }: VisitorCardProps) {
         // User cancelled the share operation
         return;
       }
+
+      // Handle invalid URLs
+      if (error instanceof TypeError && error.message.includes('URL')) {
+        toast({
+          title: "Error",
+          description: "Invalid QR code URL format",
+          variant: "destructive",
+        });
+        return;
+      }
       
       toast({
         title: "Error sharing",
-        description: "Failed to share QR code",
+        description: "Failed to share QR code. Please try again.",
         variant: "destructive",
       });
       console.error('Error sharing:', error);
