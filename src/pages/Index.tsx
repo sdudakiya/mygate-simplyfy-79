@@ -10,7 +10,7 @@ import { QRCodeScanner } from "@/components/QRCodeScanner";
 import { PreApproveVisitorForm } from "@/components/PreApproveVisitorForm";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Visitor, VisitorType } from "@/types/visitor";
-import { useNavigate, Link } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 
 const Index = () => {
   const [visitors, setVisitors] = useState<Visitor[]>([]);
@@ -42,8 +42,7 @@ const Index = () => {
     const { data, error } = await supabase
       .from('visitors')
       .select('*')
-      .order('created_at', { ascending: false })
-      .limit(5);
+      .order('created_at', { ascending: false });
 
     if (error) {
       console.error('Error fetching visitors:', error);
@@ -65,10 +64,9 @@ const Index = () => {
           arrivalTime: visitor.arrival_time,
         };
 
+        // Only add optional fields if they exist
         if (visitor.phone) transformedVisitor.phone = visitor.phone;
         if (visitor.qr_code) transformedVisitor.qr_code = visitor.qr_code;
-        if (visitor.registered_by) transformedVisitor.registered_by = visitor.registered_by;
-        if (visitor.flat_id) transformedVisitor.flat_id = visitor.flat_id;
 
         return transformedVisitor;
       })
@@ -173,13 +171,60 @@ const Index = () => {
               </div>
             </div>
 
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
+              {userRole === 'security' && (
+                <>
+                  <QRCodeScanner />
+                  <Dialog open={isPreApproveOpen} onOpenChange={setIsPreApproveOpen}>
+                    <DialogTrigger asChild>
+                      <Button className="flex items-center justify-center gap-2 h-20" variant="secondary">
+                        <UserPlus className="w-6 h-6" />
+                        <span>Check-in Visitor</span>
+                      </Button>
+                    </DialogTrigger>
+                    <DialogContent>
+                      <DialogHeader>
+                        <DialogTitle>Check-in Visitor</DialogTitle>
+                      </DialogHeader>
+                      <PreApproveVisitorForm onSuccess={() => {
+                        setIsPreApproveOpen(false);
+                        fetchVisitors();
+                      }} />
+                    </DialogContent>
+                  </Dialog>
+                </>
+              )}
+              
+              {userRole === 'flat_owner' && (
+                <>
+                  <Dialog open={isPreApproveOpen} onOpenChange={setIsPreApproveOpen}>
+                    <DialogTrigger asChild>
+                      <Button className="flex items-center justify-center gap-2 h-20" variant="secondary">
+                        <UserPlus className="w-6 h-6" />
+                        <span>Pre-approve Visitor</span>
+                      </Button>
+                    </DialogTrigger>
+                    <DialogContent>
+                      <DialogHeader>
+                        <DialogTitle>Pre-approve Visitor</DialogTitle>
+                      </DialogHeader>
+                      <PreApproveVisitorForm onSuccess={() => {
+                        setIsPreApproveOpen(false);
+                        fetchVisitors();
+                      }} />
+                    </DialogContent>
+                  </Dialog>
+
+                  <Button className="flex items-center justify-center gap-2 h-20" variant="outline">
+                    <Phone className="w-6 h-6" />
+                    <span>Emergency Contacts</span>
+                  </Button>
+                </>
+              )}
+            </div>
+
             <div>
-              <div className="flex items-center justify-between mb-4">
-                <h2 className="text-xl font-semibold">Recent Visitors</h2>
-                <Link to="/visitors" className="text-blue-600 hover:text-blue-800">
-                  View All
-                </Link>
-              </div>
+              <h2 className="text-xl font-semibold mb-4">Recent Visitors</h2>
               {visitors.map((visitor) => (
                 <VisitorCard
                   key={visitor.id}
