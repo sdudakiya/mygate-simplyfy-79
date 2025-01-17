@@ -17,11 +17,13 @@ interface FormData {
   name: string;
   type: string;
   phone: string;
+  flatNumber?: string;
 }
 
 export function PreApproveVisitorForm({ onSuccess }: PreApproveVisitorFormProps) {
   const [isLoading, setIsLoading] = useState(false);
   const [userFlatId, setUserFlatId] = useState<string | null>(null);
+  const [userRole, setUserRole] = useState<string | null>(null);
   const { toast } = useToast();
   const form = useForm<FormData>();
 
@@ -37,6 +39,7 @@ export function PreApproveVisitorForm({ onSuccess }: PreApproveVisitorFormProps)
 
         if (profile) {
           setUserFlatId(profile.flat_id);
+          setUserRole(profile.role);
         }
       }
     };
@@ -48,6 +51,23 @@ export function PreApproveVisitorForm({ onSuccess }: PreApproveVisitorFormProps)
     try {
       setIsLoading(true);
       
+      let targetFlatId = userFlatId;
+
+      // If security role and flat number provided, get the flat_id
+      if (userRole === 'security' && data.flatNumber) {
+        const { data: flat } = await supabase
+          .from('flats')
+          .select('id')
+          .eq('flat_number', data.flatNumber)
+          .single();
+        
+        if (flat) {
+          targetFlatId = flat.id;
+        } else {
+          throw new Error('Invalid flat number');
+        }
+      }
+
       // Generate QR code
       const qrCode = await QRCode.toDataURL(JSON.stringify({
         name: data.name,
@@ -66,7 +86,7 @@ export function PreApproveVisitorForm({ onSuccess }: PreApproveVisitorFormProps)
           phone: data.phone,
           qr_code: qrCode,
           status: 'pending',
-          flat_id: userFlatId,
+          flat_id: targetFlatId,
           registered_by: user?.id
         });
 
@@ -130,6 +150,21 @@ export function PreApproveVisitorForm({ onSuccess }: PreApproveVisitorFormProps)
           )}
         />
 
+        {userRole === 'security' && (
+          <FormField
+            control={form.control}
+            name="flatNumber"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Flat Number</FormLabel>
+                <FormControl>
+                  <Input placeholder="Enter flat number" {...field} />
+                </FormControl>
+              </FormItem>
+            )}
+          />
+        )}
+
         <FormField
           control={form.control}
           name="phone"
@@ -145,7 +180,7 @@ export function PreApproveVisitorForm({ onSuccess }: PreApproveVisitorFormProps)
 
         <Button type="submit" disabled={isLoading} className="w-full">
           <QrCode className="w-4 h-4 mr-2" />
-          Pre-approve & Generate QR
+          {userRole === 'security' ? 'Check-in' : 'Pre-approve & Generate QR'}
         </Button>
       </form>
     </Form>

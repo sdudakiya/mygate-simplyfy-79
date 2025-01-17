@@ -4,8 +4,9 @@ import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useToast } from "@/hooks/use-toast";
+import { supabase } from "@/integrations/supabase/client";
 
 interface VisitorCardProps {
   visitor: Visitor;
@@ -15,7 +16,41 @@ interface VisitorCardProps {
 
 export function VisitorCard({ visitor, onApprove, onDeny }: VisitorCardProps) {
   const [isQRDialogOpen, setIsQRDialogOpen] = useState(false);
+  const [userRole, setUserRole] = useState<string | null>(null);
+  const [userFlatId, setUserFlatId] = useState<string | null>(null);
+  const [registeredByFlatOwner, setRegisteredByFlatOwner] = useState(false);
   const { toast } = useToast();
+
+  useEffect(() => {
+    const fetchUserInfo = async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user) {
+        const { data: profile } = await supabase
+          .from('profiles')
+          .select('role, flat_id')
+          .eq('id', user.id)
+          .single();
+
+        if (profile) {
+          setUserRole(profile.role);
+          setUserFlatId(profile.flat_id);
+        }
+
+        // Check if visitor was registered by a flat owner
+        if (visitor.registered_by) {
+          const { data: registeredByProfile } = await supabase
+            .from('profiles')
+            .select('role')
+            .eq('id', visitor.registered_by)
+            .single();
+
+          setRegisteredByFlatOwner(registeredByProfile?.role === 'flat_owner');
+        }
+      }
+    };
+
+    fetchUserInfo();
+  }, [visitor.registered_by]);
 
   const statusColors = {
     pending: "bg-yellow-100 text-yellow-800",
@@ -34,27 +69,29 @@ export function VisitorCard({ visitor, onApprove, onDeny }: VisitorCardProps) {
     }
 
     try {
-      // Validate QR code URL
-      const url = new URL(visitor.qr_code);
+      // Create a temporary anchor element
+      const link = document.createElement('a');
+      link.href = visitor.qr_code;
+      link.download = `visitor-qr-${visitor.name}.png`;
+      
+      // Check if Web Share API is supported
+      if (navigator.share) {
+        // Create a blob from the data URL
+        const response = await fetch(visitor.qr_code);
+        const blob = await response.blob();
+        const file = new File([blob], `visitor-qr-${visitor.name}.png`, { type: 'image/png' });
 
-      // Check if the Web Share API is supported
-      if (!navigator.share) {
-        // Fallback for browsers that don't support Web Share API
-        toast({
-          title: "Sharing not supported",
-          description: "Your browser doesn't support sharing functionality",
-          variant: "destructive",
+        await navigator.share({
+          title: `Visitor Pass for ${visitor.name}`,
+          text: `QR Code for visitor: ${visitor.name}`,
+          files: [file]
         });
-        return;
+      } else {
+        // Fallback: trigger download
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
       }
-
-      const shareData = {
-        title: `Visitor Pass for ${visitor.name}`,
-        text: `QR Code for visitor: ${visitor.name}`,
-        url: url.toString()
-      };
-
-      await navigator.share(shareData);
 
       toast({
         title: "Success",
@@ -65,16 +102,6 @@ export function VisitorCard({ visitor, onApprove, onDeny }: VisitorCardProps) {
         // User cancelled the share operation
         return;
       }
-
-      // Handle invalid URLs
-      if (error instanceof TypeError && error.message.includes('URL')) {
-        toast({
-          title: "Error",
-          description: "Invalid QR code URL format",
-          variant: "destructive",
-        });
-        return;
-      }
       
       toast({
         title: "Error sharing",
@@ -83,6 +110,13 @@ export function VisitorCard({ visitor, onApprove, onDeny }: VisitorCardProps) {
       });
       console.error('Error sharing:', error);
     }
+  };
+
+  const showApprovalButtons = () => {
+    if (userRole === 'security') return false;
+    if (registeredByFlatOwner) return false;
+    if (visitor.status !== 'pending') return false;
+    return true;
   };
 
   return (
@@ -102,7 +136,7 @@ export function VisitorCard({ visitor, onApprove, onDeny }: VisitorCardProps) {
       </div>
       
       <div className="flex gap-2 mt-4">
-        {visitor.status === "pending" && (
+        {showApprovalButtons() && (
           <>
             <Button
               onClick={() => onApprove(visitor.id)}
