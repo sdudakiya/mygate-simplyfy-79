@@ -8,4 +8,6 @@ export interface Visitor {
   arrivalTime: string;
   phone?: string;
   qr_code?: string;
+  registered_by?: string;
+  flat_id?: string;
 }
