@@ -173,34 +173,53 @@ const Index = () => {
 
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
               {userRole === 'security' && (
-                <QRCodeScanner />
+                <>
+                  <QRCodeScanner />
+                  <Dialog open={isPreApproveOpen} onOpenChange={setIsPreApproveOpen}>
+                    <DialogTrigger asChild>
+                      <Button className="flex items-center justify-center gap-2 h-20" variant="secondary">
+                        <UserPlus className="w-6 h-6" />
+                        <span>Check-in Visitor</span>
+                      </Button>
+                    </DialogTrigger>
+                    <DialogContent>
+                      <DialogHeader>
+                        <DialogTitle>Check-in Visitor</DialogTitle>
+                      </DialogHeader>
+                      <PreApproveVisitorForm onSuccess={() => {
+                        setIsPreApproveOpen(false);
+                        fetchVisitors();
+                      }} />
+                    </DialogContent>
+                  </Dialog>
+                </>
               )}
               
               {userRole === 'flat_owner' && (
-                <Dialog open={isPreApproveOpen} onOpenChange={setIsPreApproveOpen}>
-                  <DialogTrigger asChild>
-                    <Button className="flex items-center justify-center gap-2 h-20" variant="secondary">
-                      <UserPlus className="w-6 h-6" />
-                      <span>Pre-approve Visitor</span>
-                    </Button>
-                  </DialogTrigger>
-                  <DialogContent>
-                    <DialogHeader>
-                      <DialogTitle>Pre-approve Visitor</DialogTitle>
-                    </DialogHeader>
-                    <PreApproveVisitorForm onSuccess={() => {
-                      setIsPreApproveOpen(false);
-                      fetchVisitors();
-                    }} />
-                  </DialogContent>
-                </Dialog>
-              )}
+                <>
+                  <Dialog open={isPreApproveOpen} onOpenChange={setIsPreApproveOpen}>
+                    <DialogTrigger asChild>
+                      <Button className="flex items-center justify-center gap-2 h-20" variant="secondary">
+                        <UserPlus className="w-6 h-6" />
+                        <span>Pre-approve Visitor</span>
+                      </Button>
+                    </DialogTrigger>
+                    <DialogContent>
+                      <DialogHeader>
+                        <DialogTitle>Pre-approve Visitor</DialogTitle>
+                      </DialogHeader>
+                      <PreApproveVisitorForm onSuccess={() => {
+                        setIsPreApproveOpen(false);
+                        fetchVisitors();
+                      }} />
+                    </DialogContent>
+                  </Dialog>
 
-              {userRole === 'flat_owner' && (
-                <Button className="flex items-center justify-center gap-2 h-20" variant="outline">
-                  <Phone className="w-6 h-6" />
-                  <span>Emergency Contacts</span>
-                </Button>
+                  <Button className="flex items-center justify-center gap-2 h-20" variant="outline">
+                    <Phone className="w-6 h-6" />
+                    <span>Emergency Contacts</span>
+                  </Button>
+                </>
               )}
             </div>
 
