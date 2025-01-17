@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { QrCode } from "lucide-react";
 import { Form, FormField, FormItem, FormLabel, FormControl } from "@/components/ui/form";
@@ -21,8 +21,28 @@ interface FormData {
 
 export function PreApproveVisitorForm({ onSuccess }: PreApproveVisitorFormProps) {
   const [isLoading, setIsLoading] = useState(false);
+  const [userFlatId, setUserFlatId] = useState<string | null>(null);
   const { toast } = useToast();
   const form = useForm<FormData>();
+
+  useEffect(() => {
+    const fetchUserProfile = async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user) {
+        const { data: profile } = await supabase
+          .from('profiles')
+          .select('flat_id, role')
+          .eq('id', user.id)
+          .single();
+
+        if (profile) {
+          setUserFlatId(profile.flat_id);
+        }
+      }
+    };
+
+    fetchUserProfile();
+  }, []);
 
   const onSubmit = async (data: FormData) => {
     try {
@@ -35,6 +55,8 @@ export function PreApproveVisitorForm({ onSuccess }: PreApproveVisitorFormProps)
         timestamp: new Date().toISOString(),
       }));
 
+      const { data: { user } } = await supabase.auth.getUser();
+
       // Save visitor to database
       const { error } = await supabase
         .from('visitors')
@@ -43,7 +65,9 @@ export function PreApproveVisitorForm({ onSuccess }: PreApproveVisitorFormProps)
           type: data.type,
           phone: data.phone,
           qr_code: qrCode,
-          status: 'pending'
+          status: 'pending',
+          flat_id: userFlatId,
+          registered_by: user?.id
         });
 
       if (error) throw error;
