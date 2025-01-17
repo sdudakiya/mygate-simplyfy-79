@@ -2,11 +2,15 @@ import { useState, useEffect } from "react";
 import { VisitorCard } from "@/components/VisitorCard";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
-import { Visitor } from "@/types/visitor";
+import { Visitor, VisitorType } from "@/types/visitor";
 
 const Visitors = () => {
   const [visitors, setVisitors] = useState<Visitor[]>([]);
   const { toast } = useToast();
+
+  const isValidVisitorType = (type: string): type is VisitorType => {
+    return ['Delivery', 'Guest', 'Service', 'Cab'].includes(type);
+  };
 
   const fetchVisitors = async () => {
     const { data, error } = await supabase
@@ -24,17 +28,28 @@ const Visitors = () => {
       return;
     }
 
-    const transformedVisitors = data.map(visitor => ({
-      id: visitor.id,
-      name: visitor.name,
-      type: visitor.type,
-      status: visitor.status,
-      arrivalTime: visitor.arrival_time,
-      phone: visitor.phone,
-      qr_code: visitor.qr_code,
-      registered_by: visitor.registered_by,
-      flat_id: visitor.flat_id
-    }));
+    const transformedVisitors = (data || [])
+      .map(visitor => {
+        if (!isValidVisitorType(visitor.type)) {
+          console.error(`Invalid visitor type: ${visitor.type}`);
+          return null;
+        }
+
+        const transformedVisitor: Visitor = {
+          id: visitor.id,
+          name: visitor.name,
+          type: visitor.type as VisitorType,
+          status: visitor.status as "pending" | "approved" | "denied",
+          arrivalTime: visitor.arrival_time,
+          phone: visitor.phone,
+          qr_code: visitor.qr_code,
+          registered_by: visitor.registered_by,
+          flat_id: visitor.flat_id
+        };
+
+        return transformedVisitor;
+      })
+      .filter((visitor): visitor is Visitor => visitor !== null);
 
     setVisitors(transformedVisitors);
   };
