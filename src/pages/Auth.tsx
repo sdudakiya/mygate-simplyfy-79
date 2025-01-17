@@ -18,6 +18,7 @@ const Auth = () => {
   const navigate = useNavigate();
   const [error, setError] = useState<string | null>(null);
   const [selectedFlatNumber, setSelectedFlatNumber] = useState<string>("");
+  const [view, setView] = useState<"sign_in" | "sign_up">("sign_in");
 
   // Fetch flat numbers
   const { data: flats } = useQuery({
@@ -64,7 +65,7 @@ const Auth = () => {
             Welcome to MyGate
           </h2>
           <p className="mt-2 text-center text-sm text-gray-600">
-            Sign in to manage your community security
+            {view === "sign_in" ? "Sign in to manage your community security" : "Create your account"}
           </p>
         </div>
         {error && (
@@ -73,41 +74,46 @@ const Auth = () => {
           </Alert>
         )}
         <div className="space-y-4">
-          <div className="space-y-2">
-            <Label htmlFor="flat-number">Flat Number</Label>
-            <Select
-              value={selectedFlatNumber}
-              onValueChange={(value) => {
-                setSelectedFlatNumber(value);
-                // Set the flat number in the user metadata
-                const element = document.querySelector('input[name="email"]');
-                if (element) {
-                  const event = new Event('input', { bubbles: true });
-                  element.dispatchEvent(event);
-                }
-              }}
-            >
-              <SelectTrigger className="w-full">
-                <SelectValue placeholder="Select your flat number" />
-              </SelectTrigger>
-              <SelectContent>
-                {flats?.map((flat) => (
-                  <SelectItem key={flat.flat_number} value={flat.flat_number}>
-                    {flat.flat_number}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
+          {view === "sign_up" && (
+            <div className="space-y-2">
+              <Label htmlFor="flat-number">Flat Number</Label>
+              <Select
+                value={selectedFlatNumber}
+                onValueChange={setSelectedFlatNumber}
+              >
+                <SelectTrigger className="w-full bg-white">
+                  <SelectValue placeholder="Select your flat number" />
+                </SelectTrigger>
+                <SelectContent>
+                  {flats?.map((flat) => (
+                    <SelectItem key={flat.flat_number} value={flat.flat_number}>
+                      {flat.flat_number}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          )}
           <SupabaseAuth
             supabaseClient={supabase}
-            appearance={{ theme: ThemeSupa }}
+            appearance={{ 
+              theme: ThemeSupa,
+              variables: {
+                default: {
+                  colors: {
+                    brand: '#1E40AF',
+                    brandAccent: '#60A5FA',
+                  },
+                },
+              },
+            }}
             providers={[]}
             redirectTo={window.location.origin}
-            view="sign_up"
-            additionalData={{
+            view={view}
+            onViewChange={({ view }) => setView(view as "sign_in" | "sign_up")}
+            additionalData={view === "sign_up" ? {
               flat_number: selectedFlatNumber,
-            }}
+            } : undefined}
           />
         </div>
       </div>

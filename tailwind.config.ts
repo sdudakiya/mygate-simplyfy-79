@@ -44,6 +44,10 @@ export default {
           DEFAULT: "#F8FAFC",
           foreground: "#0F172A",
         },
+        popover: {
+          DEFAULT: "hsl(0 0% 100%)",
+          foreground: "hsl(222.2 84% 4.9%)",
+        },
       },
       fontFamily: {
         sans: ["Inter", "sans-serif"],
