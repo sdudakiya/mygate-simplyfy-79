@@ -1,4 +1,4 @@
-import { Home, Users, Bell, Shield, Settings, Menu } from "lucide-react";
+import { Home, Users, Bell, Shield, Settings } from "lucide-react";
 import {
   Sidebar,
   SidebarContent,
@@ -9,6 +9,7 @@ import {
   SidebarMenuButton,
   SidebarMenuItem,
 } from "@/components/ui/sidebar";
+import { Link } from "react-router-dom";
 
 const menuItems = [
   { title: "Dashboard", icon: Home, url: "/" },
@@ -29,10 +30,10 @@ export function AppSidebar() {
               {menuItems.map((item) => (
                 <SidebarMenuItem key={item.title}>
                   <SidebarMenuButton asChild>
-                    <a href={item.url} className="flex items-center gap-3">
+                    <Link to={item.url} className="flex items-center gap-3">
                       <item.icon className="h-5 w-5" />
                       <span>{item.title}</span>
-                    </a>
+                    </Link>
                   </SidebarMenuButton>
                 </SidebarMenuItem>
               ))}
