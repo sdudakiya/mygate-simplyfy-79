@@ -60,7 +60,7 @@ export const UserManagement = () => {
       flatId,
     }: {
       userId: string;
-      role: string;
+      role: "admin" | "security" | "flat_owner";
       flatId?: string | null;
     }) => {
       const { error } = await supabase
@@ -93,7 +93,7 @@ export const UserManagement = () => {
                 <label className="block text-sm font-medium mb-1">Role</label>
                 <Select
                   value={user.role}
-                  onValueChange={(value) =>
+                  onValueChange={(value: "admin" | "security" | "flat_owner") =>
                     updateUserMutation.mutate({
                       userId: user.id,
                       role: value,

@@ -110,7 +110,7 @@ const Auth = () => {
             providers={[]}
             redirectTo={window.location.origin}
             view={view}
-            onViewChange={({ view }) => setView(view as "sign_in" | "sign_up")}
+            onViewChange={({ view: newView }) => setView(newView as "sign_in" | "sign_up")}
             additionalData={view === "sign_up" ? {
               flat_number: selectedFlatNumber,
             } : undefined}
