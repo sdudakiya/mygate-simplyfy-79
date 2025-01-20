@@ -28,7 +28,29 @@ const Visitors = () => {
   const [visitors, setVisitors] = useState<Visitor[]>([]);
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
+  const [userRole, setUserRole] = useState<string | null>(null);
+  const [userFlatId, setUserFlatId] = useState<string | null>(null);
   const { toast } = useToast();
+
+  useEffect(() => {
+    const fetchUserProfile = async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user) {
+        const { data: profile } = await supabase
+          .from('profiles')
+          .select('role, flat_id')
+          .eq('id', user.id)
+          .single();
+
+        if (profile) {
+          setUserRole(profile.role);
+          setUserFlatId(profile.flat_id);
+        }
+      }
+    };
+
+    fetchUserProfile();
+  }, []);
 
   const isValidVisitorType = (type: string): type is VisitorType => {
     return ['Delivery', 'Guest', 'Service', 'Cab'].includes(type);
@@ -36,12 +58,19 @@ const Visitors = () => {
 
   const fetchVisitors = async () => {
     // First, get the total count
-    const { count } = await supabase
+    let query = supabase
       .from('visitors')
       .select('*', { count: 'exact', head: true });
 
+    // Apply flat_id filter for flat owners
+    if (userRole === 'flat_owner' && userFlatId) {
+      query = query.eq('flat_id', userFlatId);
+    }
+
+    const { count } = await query;
+
     // Then fetch the paginated data
-    const { data, error } = await supabase
+    let dataQuery = supabase
       .from('visitors')
       .select(`
         *,
@@ -51,6 +80,13 @@ const Visitors = () => {
       `)
       .range((currentPage - 1) * ITEMS_PER_PAGE, currentPage * ITEMS_PER_PAGE - 1)
       .order('created_at', { ascending: false });
+
+    // Apply flat_id filter for flat owners
+    if (userRole === 'flat_owner' && userFlatId) {
+      dataQuery = dataQuery.eq('flat_id', userFlatId);
+    }
+
+    const { data, error } = await dataQuery;
 
     if (error) {
       console.error('Error fetching visitors:', error);
@@ -92,8 +128,10 @@ const Visitors = () => {
   };
 
   useEffect(() => {
-    fetchVisitors();
-  }, [currentPage]);
+    if (userRole) {
+      fetchVisitors();
+    }
+  }, [currentPage, userRole, userFlatId]);
 
   const handleApprove = async (id: string) => {
     const { error } = await supabase
