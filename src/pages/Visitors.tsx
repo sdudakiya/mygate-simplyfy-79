@@ -35,9 +35,13 @@ const Visitors = () => {
   };
 
   const fetchVisitors = async () => {
+    // First, get the total count
     const { count } = await supabase
       .from('visitors')
-      .select('*', { count: 'exact data, error } = await supabase
+      .select('*', { count: 'exact', head: true });
+
+    // Then fetch the paginated data
+    const { data, error } = await supabase
       .from('visitors')
       .select(`
         *,
