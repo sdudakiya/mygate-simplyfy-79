@@ -10,5 +10,4 @@ export interface Visitor {
   qr_code?: string;
   registered_by?: string;
   flat_id?: string;
-  flatNumber?: string;
 }

@@ -41,14 +41,8 @@ const Index = () => {
   const fetchVisitors = async () => {
     const { data, error } = await supabase
       .from('visitors')
-      .select(`
-        *,
-        flats (
-          flat_number
-        )
-      `)
-      .order('created_at', { ascending: false })
-      .limit(5);
+      .select('*')
+      .order('created_at', { ascending: false });
 
     if (error) {
       console.error('Error fetching visitors:', error);
@@ -68,13 +62,11 @@ const Index = () => {
           type: visitor.type as VisitorType,
           status: visitor.status as "pending" | "approved" | "denied",
           arrivalTime: visitor.arrival_time,
-          flatNumber: visitor.flats?.flat_number || 'N/A'
         };
 
+        // Only add optional fields if they exist
         if (visitor.phone) transformedVisitor.phone = visitor.phone;
         if (visitor.qr_code) transformedVisitor.qr_code = visitor.qr_code;
-        if (visitor.registered_by) transformedVisitor.registered_by = visitor.registered_by;
-        if (visitor.flat_id) transformedVisitor.flat_id = visitor.flat_id;
 
         return transformedVisitor;
       })
@@ -231,14 +223,8 @@ const Index = () => {
               )}
             </div>
 
-            <div className="mb-6 flex items-center justify-between">
-              <h2 className="text-xl font-semibold">Recent Visitors</h2>
-              <Button variant="link" onClick={() => navigate('/visitors')}>
-                View All Visitors
-              </Button>
-            </div>
-
             <div>
+              <h2 className="text-xl font-semibold mb-4">Recent Visitors</h2>
               {visitors.map((visitor) => (
                 <VisitorCard
                   key={visitor.id}
