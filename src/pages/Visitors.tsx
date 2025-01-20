@@ -186,82 +186,103 @@ const Visitors = () => {
 
   return (
     <SidebarProvider>
-      <div className="min-h-screen flex w-full bg-gray-50">
+      <div className="min-h-screen flex flex-col md:flex-row w-full bg-gray-50">
         <AppSidebar />
-        <main className="flex-1 p-6">
-          <div className="max-w-6xl mx-auto">
-            <div className="mb-8">
-              <h1 className="text-3xl font-bold text-gray-900">Visitors</h1>
-              <p className="text-gray-600 mt-1">View and manage all visitor records</p>
+        <main className="flex-1 p-4 md:p-6 overflow-x-hidden">
+          <div className="max-w-full md:max-w-6xl mx-auto">
+            <div className="mb-6 md:mb-8">
+              <h1 className="text-2xl md:text-3xl font-bold text-gray-900">Visitors</h1>
+              <p className="text-sm md:text-base text-gray-600 mt-1">View and manage all visitor records</p>
             </div>
 
-            <div className="bg-white rounded-lg shadow">
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Name</TableHead>
-                    <TableHead>Type</TableHead>
-                    <TableHead>Status</TableHead>
-                    <TableHead>Arrival Time</TableHead>
-                    <TableHead>Flat Number</TableHead>
-                    <TableHead>Actions</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {visitors.map((visitor) => (
-                    <TableRow key={visitor.id}>
-                      <TableCell>{visitor.name}</TableCell>
-                      <TableCell>{visitor.type}</TableCell>
-                      <TableCell>
-                        <span className={`px-2 py-1 rounded-full text-sm ${
-                          visitor.status === 'approved' ? 'bg-green-100 text-green-800' :
-                          visitor.status === 'denied' ? 'bg-red-100 text-red-800' :
-                          'bg-yellow-100 text-yellow-800'
-                        }`}>
-                          {visitor.status.charAt(0).toUpperCase() + visitor.status.slice(1)}
-                        </span>
-                      </TableCell>
-                      <TableCell>
-                        {new Date(visitor.arrivalTime).toLocaleString()}
-                      </TableCell>
-                      <TableCell>{visitor.flatNumber}</TableCell>
-                      <TableCell>
-                        <VisitorCard
-                          visitor={visitor}
-                          onApprove={handleApprove}
-                          onDeny={handleDeny}
-                        />
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
+            <div className="bg-white rounded-lg shadow overflow-hidden">
+              {/* Mobile view - Cards */}
+              <div className="block md:hidden">
+                {visitors.map((visitor) => (
+                  <VisitorCard
+                    key={visitor.id}
+                    visitor={visitor}
+                    onApprove={handleApprove}
+                    onDeny={handleDeny}
+                  />
+                ))}
+              </div>
 
-              <div className="py-4">
+              {/* Desktop view - Table */}
+              <div className="hidden md:block overflow-x-auto">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Name</TableHead>
+                      <TableHead>Type</TableHead>
+                      <TableHead>Status</TableHead>
+                      <TableHead>Arrival Time</TableHead>
+                      <TableHead>Flat Number</TableHead>
+                      <TableHead>Actions</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {visitors.map((visitor) => (
+                      <TableRow key={visitor.id}>
+                        <TableCell className="font-medium">{visitor.name}</TableCell>
+                        <TableCell>{visitor.type}</TableCell>
+                        <TableCell>
+                          <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs md:text-sm ${
+                            visitor.status === 'approved' ? 'bg-green-100 text-green-800' :
+                            visitor.status === 'denied' ? 'bg-red-100 text-red-800' :
+                            'bg-yellow-100 text-yellow-800'
+                          }`}>
+                            {visitor.status.charAt(0).toUpperCase() + visitor.status.slice(1)}
+                          </span>
+                        </TableCell>
+                        <TableCell className="whitespace-nowrap">
+                          {new Date(visitor.arrivalTime).toLocaleString()}
+                        </TableCell>
+                        <TableCell>{visitor.flatNumber}</TableCell>
+                        <TableCell>
+                          <VisitorCard
+                            visitor={visitor}
+                            onApprove={handleApprove}
+                            onDeny={handleDeny}
+                          />
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </div>
+
+              <div className="p-4 border-t">
                 <Pagination>
-                  <PaginationContent>
+                  <PaginationContent className="flex flex-wrap justify-center gap-2">
                     <PaginationItem>
                       <PaginationPrevious 
                         onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
                         aria-disabled={currentPage === 1}
-                        className={currentPage === 1 ? 'pointer-events-none opacity-50' : ''}
+                        className={`${currentPage === 1 ? 'pointer-events-none opacity-50' : ''} text-sm md:text-base`}
                       />
                     </PaginationItem>
                     {Array.from({ length: totalPages }, (_, i) => (
-                      <PaginationItem key={i + 1}>
+                      <PaginationItem key={i + 1} className="hidden md:block">
                         <PaginationLink
                           onClick={() => setCurrentPage(i + 1)}
                           isActive={currentPage === i + 1}
+                          className="text-sm md:text-base"
                         >
                           {i + 1}
                         </PaginationLink>
                       </PaginationItem>
                     ))}
+                    <PaginationItem className="md:hidden">
+                      <span className="px-4 py-2 text-sm">
+                        Page {currentPage} of {totalPages}
+                      </span>
+                    </PaginationItem>
                     <PaginationItem>
                       <PaginationNext
                         onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
                         aria-disabled={currentPage === totalPages}
-                        className={currentPage === totalPages ? 'pointer-events-none opacity-50' : ''}
+                        className={`${currentPage === totalPages ? 'pointer-events-none opacity-50' : ''} text-sm md:text-base`}
                       />
                     </PaginationItem>
                   </PaginationContent>
