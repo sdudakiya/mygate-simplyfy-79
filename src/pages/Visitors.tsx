@@ -37,9 +37,7 @@ const Visitors = () => {
   const fetchVisitors = async () => {
     const { count } = await supabase
       .from('visitors')
-      .select('*', { count: 'exact', head: true });
-
-    const { data, error } = await supabase
+      .select('*', { count: 'exact data, error } = await supabase
       .from('visitors')
       .select(`
         *,
@@ -203,7 +201,8 @@ const Visitors = () => {
                     <PaginationItem>
                       <PaginationPrevious 
                         onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
-                        disabled={currentPage === 1}
+                        aria-disabled={currentPage === 1}
+                        className={currentPage === 1 ? 'pointer-events-none opacity-50' : ''}
                       />
                     </PaginationItem>
                     {Array.from({ length: totalPages }, (_, i) => (
@@ -219,7 +218,8 @@ const Visitors = () => {
                     <PaginationItem>
                       <PaginationNext
                         onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
-                        disabled={currentPage === totalPages}
+                        aria-disabled={currentPage === totalPages}
+                        className={currentPage === totalPages ? 'pointer-events-none opacity-50' : ''}
                       />
                     </PaginationItem>
                   </PaginationContent>
